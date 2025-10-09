@@ -1,38 +1,22 @@
 #!/bin/bash
 
-# Файл для загрузки
-LOCAL_FILE="data/test.csv"
-HDFS_DIR="/data"
-HDFS_FILE="${HDFS_DIR}/test.csv"
-NAMENODE_CONTAINER="hdfs-namenode-1"
-
-echo "Копируем файл в контейнер namenode..."
-docker cp "$LOCAL_FILE" $NAMENODE_CONTAINER:/tmp/test.csv
+echo "1. Copy breweries.csv to the namenode:"
+docker cp breweries.csv namenode:breweries.csv
 if [ $? -ne 0 ]; then
-    echo "Ошибка при копировании файла!"
+    echo "ERROR!"
     exit 1
 fi
 
-echo "Создаём каталог в HDFS: $HDFS_DIR"
-docker exec -it $NAMENODE_CONTAINER hdfs dfs -mkdir -p "$HDFS_DIR"
+echo "2. Create a HDFS directory /data//openbeer/breweries."
+docker exec -it namenode bash hdfs dfs -mkdir -p /data/openbeer/breweries
 if [ $? -ne 0 ]; then
-    echo "Ошибка при создании каталога в HDFS!"
+    echo "ERROR!"
     exit 1
 fi
 
-echo "Даем права на запись всем пользователям для $HDFS_DIR"
-docker exec -it $NAMENODE_CONTAINER hdfs dfs -chmod 777 "$HDFS_DIR"
+echo "3. Copy breweries.csv to HDFS:"
+docker exec -it namenode bash hdfs dfs -put breweries.csv /data/openbeer/breweries/breweries.csv
 if [ $? -ne 0 ]; then
-    echo "Ошибка при изменении прав на каталог HDFS!"
+    echo "ERROR!"
     exit 1
 fi
-
-echo "Заливаем файл в HDFS: $HDFS_FILE"
-docker exec -it $NAMENODE_CONTAINER hdfs dfs -put -f /tmp/test.csv "$HDFS_FILE"
-if [ $? -ne 0 ]; then
-    echo "Ошибка при загрузке файла в HDFS!"
-    exit 1
-fi
-
-echo "Содержимое каталога $HDFS_DIR в HDFS:"
-docker exec -it $NAMENODE_CONTAINER hdfs dfs -ls "$HDFS_DIR"
