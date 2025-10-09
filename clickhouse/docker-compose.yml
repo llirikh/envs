@@ -1,0 +1,87 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server
+    container_name: clickhouse-server
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./config/config.xml:/etc/clickhouse-server/config.d/docker.xml
+      - ./config/users.xml:/etc/clickhouse-server/users.d/docker.xml
+    environment:
+      CLICKHOUSE_DB: default
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+    networks:
+      - ntwk
+    
+
+  spark:
+    image: bitnami/spark:3.5.1
+    container_name: spark-master
+
+    depends_on:
+      - clickhouse
+
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    ports:
+      - '8080:8080'
+      - '7077:7077'
+    networks:
+      - ntwk
+
+  spark-worker:
+    image: bitnami/spark:3.5.1
+    container_name: spark-worker
+
+    depends_on:
+      - spark
+    
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+
+    networks:
+      - ntwk
+  
+
+  jupyter-edge-node:
+    build: .
+    container_name: jupyter-edge-node
+    user: root
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebooks:/home/jovyan/work
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    networks:
+      - ntwk
+
+volumes:
+  clickhouse_data:
+
+networks:
+  ntwk:

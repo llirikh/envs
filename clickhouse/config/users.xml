@@ -1,0 +1,21 @@
+<clickhouse>
+    <users>
+        <default>
+            <password_sha256_hex>37a8eec1ce19687d132fe29051dca629d164e2c4958ba141d5f4133a33f0688f</password_sha256_hex>
+            <networks>
+                <ip>127.0.0.1</ip>
+                <ip>10.0.0.0/8</ip>
+                <ip>172.16.0.0/12</ip>
+                <ip>192.168.0.0/16</ip>
+            </networks>
+            <profile>default</profile>
+        </default>
+    </users>
+
+    <profiles>
+        <default>
+            <max_memory_usage>6000000000</max_memory_usage>
+            <max_execution_time>300</max_execution_time>
+        </default>
+    </profiles>
+</clickhouse>
