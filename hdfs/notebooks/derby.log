@@ -1,0 +1,13 @@
+----------------------------------------------------------------
+Thu Oct 09 14:46:19 GMT 2025:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.14.2.0 - (1828579): instance a816c00e-0199-c96f-ec41-000002d7fce0 
+on database directory /home/jovyan/work/metastore_db with class loader jdk.internal.loader.ClassLoaders$AppClassLoader@5ffd2b27 
+Loaded from file:/opt/conda/lib/python3.11/site-packages/pyspark/jars/derby-10.14.2.0.jar
+java.vendor=Ubuntu
+java.runtime.version=17.0.16+8-Ubuntu-0ubuntu122.04.1
+user.dir=/home/jovyan/work
+os.name=Linux
+os.arch=amd64
+os.version=6.14.0-33-generic
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''

@@ -1,6 +1,3 @@
-clickhouse/notebooks/.ipynb_checkpoints/
-hdfs/notebooks/.ipynb_checkpoints/
-minio/notebooks/.ipynb_checkpoints/
-postgres/notebooks/.ipynb_checkpoints/
+*ipynb_checkpoints/
 
 minio/minio_data/*
