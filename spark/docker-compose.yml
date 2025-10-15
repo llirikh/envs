@@ -1,0 +1,66 @@
+version: "3.9"
+
+services:
+  spark-master:
+    image: apache/spark:3.5.1
+    container_name: spark-master
+    hostname: spark-master
+    environment:
+      - SPARK_NO_DAEMONIZE=true
+      - SPARK_MASTER_HOST=spark-master
+    command: >
+      bash -c "
+        /opt/spark/sbin/start-master.sh &&
+        tail -f /opt/spark/logs/spark--org.apache.spark.deploy.master.Master-*.out
+      "
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    networks:
+      - spark-net
+
+  spark-worker:
+    image: apache/spark:3.5.1
+    container_name: spark-worker
+    hostname: spark-worker
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_NO_DAEMONIZE=true
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    command: >
+      bash -c "
+        /opt/spark/sbin/start-worker.sh spark://spark-master:7077 &&
+        tail -f /opt/spark/logs/spark--org.apache.spark.deploy.worker.Worker-*.out
+      "
+    ports:
+      - "8081:8081"
+    networks:
+      - spark-net
+  
+  jupyter:
+    build:
+      context: ./jupyter
+      dockerfile: Dockerfile
+    container_name: jupyter
+    hostname: jupyter
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - PYSPARK_PYTHON=python3
+      - PYSPARK_DRIVER_PYTHON=jupyter
+      - PYSPARK_DRIVER_PYTHON_OPTS="notebook --no-browser --ip=0.0.0.0 --allow-root --NotebookApp.token=''"
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebooks:/home/jovyan/work
+    networks:
+      - spark-net
+
+
+networks:
+  spark-net:
+    driver: bridge
