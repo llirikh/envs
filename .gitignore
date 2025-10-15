@@ -1,3 +1,5 @@
-*ipynb_checkpoints/
+.ipynb_checkpoints/
+
+hdfs/notebooks/metastore_db/
 
 minio/minio_data/*
