@@ -1,14 +1,21 @@
-import time
+from pyspark.sql import SparkSession, types as T
 import pandas as pd
-from pyspark.sql import SparkSession
+import time
 
 spark = SparkSession.builder.getOrCreate()
 
 hdfs_path = "hdfs://namenode:9000/data/openbeer/streaming_breweries"
 
+schema = T.StructType([
+    T.StructField("NUM", T.IntegerType(), True),
+    T.StructField("NAME", T.StringType(), True),
+    T.StructField("CITY", T.StringType(), True),
+    T.StructField("STATE", T.StringType(), True),
+    T.StructField("ID", T.IntegerType(), True),
+])
+
 counter = 0
 while True:
-    # создаём DataFrame с тестовыми данными
     df = pd.DataFrame({
         "NUM": [counter],
         "NAME": [f"Test_Brewery_{counter}"],
@@ -16,12 +23,9 @@ while True:
         "STATE": ["TS"],
         "ID": [1000 + counter]
     })
-    
-    # конвертируем в Spark DataFrame
-    sdf = spark.createDataFrame(df)
-    
-    # сохраняем как отдельный Parquet-файл (каждый файл — отдельная партия)
+
+    sdf = spark.createDataFrame(df, schema=schema)
     sdf.write.mode("append").parquet(hdfs_path)
-    
+
     counter += 1
-    time.sleep(5)  # например, каждые 5 секунд
+    time.sleep(5)
