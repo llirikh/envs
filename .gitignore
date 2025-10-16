@@ -3,4 +3,4 @@
 hdfs/notebooks/metastore_db
 hdfs/notebooks/derby.log
 
-minio/minio_data/
+s3/minio_data/
