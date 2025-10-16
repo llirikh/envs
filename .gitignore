@@ -2,5 +2,3 @@
 
 hdfs/notebooks/metastore_db
 hdfs/notebooks/derby.log
-
-s3/minio_data/
