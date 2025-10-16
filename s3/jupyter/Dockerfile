@@ -1,4 +1,4 @@
-FROM jupyter/base-notebook:latest
+FROM jupyter/base-notebook:python-3.8
 
 USER root
 
@@ -8,4 +8,4 @@ USER $NB_UID
 
 RUN python3 -m pip install pyspark==3.5.1
 
-CMD ["start-notebook.py"]
+#CMD ["start-notebook.py"]
