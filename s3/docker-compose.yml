@@ -1,4 +1,28 @@
 services:
+  clickhouse-server:
+    image: clickhouse:latest
+    container_name: clickhouse-server
+    hostname: clickhouse-server
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_PASSWORD: 1234qwe
+      CLICKHOUSE_USER: default
+    cap_add:
+      - SYS_NICE 
+      - IPC_LOCK  
+      - NET_ADMIN
+      - SYS_PTRACE
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    ports: 
+      - "8123:8123"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse/
+    networks:
+      - spark-net
+
   minio:
     image: minio/minio:latest
     container_name: minio
@@ -38,7 +62,6 @@ services:
   spark-worker:
     image: apache/spark:3.5.1
     container_name: spark-worker
-    hostname: spark-worker
     depends_on:
       - spark-master
     environment:
@@ -75,6 +98,7 @@ services:
 
 volumes:
   minio-data:
+  clickhouse-data:
 
 networks:
   spark-net:
