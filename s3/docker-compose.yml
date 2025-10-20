@@ -52,7 +52,8 @@ services:
       POSTGRES_USER: iceberg
       POSTGRES_PASSWORD: iceberg
       POSTGRES_DB: iceberg_catalog
-      AWS_REGION: us-east-1
+    volumes:
+      - pg-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
@@ -143,6 +144,7 @@ services:
 
 volumes:
   minio-data:
+  pg-data:
   clickhouse-data:
 
 networks:
