@@ -1,0 +1,157 @@
+services:
+  clickhouse-server:
+    image: clickhouse:latest
+    container_name: clickhouse-server
+    hostname: clickhouse-server
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_PASSWORD: 1234qwe
+      CLICKHOUSE_USER: default
+    cap_add:
+      - SYS_NICE 
+      - IPC_LOCK  
+      - NET_ADMIN
+      - SYS_PTRACE
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    ports: 
+      - "8123:8123"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse/
+    networks:
+      - spark-net
+
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    hostname: minio
+    restart: always
+    environment:
+      - MINIO_ROOT_USER=minio
+      - MINIO_ROOT_PASSWORD=minio-password
+      - MINIO_BROWSER=on
+      - AWS_REGION=us-east-1
+    command: server /data --console-address ":9001"
+    ports:
+      - 9000:9000
+      - 9001:9001
+    volumes:
+      - minio-data:/data
+    networks:
+      - spark-net
+  
+  
+  postgres-iceberg:
+    image: postgres:13
+    container_name: postgres-iceberg
+    hostname: postgres-iceberg
+    environment:
+      POSTGRES_USER: iceberg
+      POSTGRES_PASSWORD: iceberg
+      POSTGRES_DB: iceberg_catalog
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - spark-net
+  
+  rest:
+    image: tabulario/iceberg-rest:latest
+    container_name: iceberg
+    hostname: iceberg
+    ports:
+      - "8181:8181"
+    environment:
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio-password
+      - AWS_REGION=us-east-1
+      - CATALOG_WAREHOUSE=s3://iceberg/
+      - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
+      - CATALOG_S3_ENDPOINT=http://minio:9000
+      - CATALOG_S3_PATH__STYLE__ACCESS=true
+      - CATALOG_URI=jdbc:postgresql://postgres-iceberg:5432/iceberg_catalog?user=iceberg&password=iceberg
+      - CATALOG_JDBC_DRIVER=org.postgresql.Driver
+      - CATALOG_JDBC_USER=iceberg
+      - CATALOG_JDBC_PASSWORD=iceberg
+    depends_on:
+      - postgres-iceberg
+      - minio
+    restart: on-failure
+    networks:
+      - spark-net
+
+  spark-master:
+    image: apache/spark:3.5.7
+    container_name: spark-master
+    hostname: spark-master
+    environment:
+      - SPARK_NO_DAEMONIZE=true
+      - SPARK_MASTER_HOST=spark-master
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio-password
+      - AWS_REGION=us-east-1
+    command: >
+      bash -c "
+        /opt/spark/sbin/start-master.sh &&
+        tail -f /opt/spark/logs/spark--org.apache.spark.deploy.master.Master-*.out
+      "
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    networks:
+      - spark-net
+
+  spark-worker:
+    image: apache/spark:3.5.7
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_NO_DAEMONIZE=true
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio-password
+      - AWS_REGION=us-east-1
+    command: >
+      bash -c "
+        /opt/spark/sbin/start-worker.sh spark://spark-master:7077 &&
+        tail -f /opt/spark/logs/spark--org.apache.spark.deploy.worker.Worker-*.out"
+    networks:
+      - spark-net
+  
+  jupyter:
+    build:
+      context: ./jupyter
+      dockerfile: Dockerfile
+    container_name: jupyter
+    hostname: jupyter
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - PYSPARK_PYTHON=python3
+      - PYSPARK_DRIVER_PYTHON=jupyter
+      - PYSPARK_DRIVER_PYTHON_OPTS="notebook --no-browser --ip=0.0.0.0 --allow-root --NotebookApp.token=''"
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio-password
+      - AWS_REGION=us-east-1 # Без этого не работает, не понимаю зачем прокидывать этот env в этот контейнер
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./notebooks:/home/jovyan/work
+    networks:
+      - spark-net
+
+volumes:
+  minio-data:
+  pg-data:
+  clickhouse-data:
+
+networks:
+  spark-net:
+    driver: bridge
