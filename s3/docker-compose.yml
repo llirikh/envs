@@ -85,12 +85,14 @@ services:
       - spark-net
 
   spark-master:
-    image: apache/spark:3.5.1
+    image: apache/spark:3.5.7
     container_name: spark-master
     hostname: spark-master
     environment:
       - SPARK_NO_DAEMONIZE=true
       - SPARK_MASTER_HOST=spark-master
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio-password
       - AWS_REGION=us-east-1
     command: >
       bash -c "
@@ -104,7 +106,7 @@ services:
       - spark-net
 
   spark-worker:
-    image: apache/spark:3.5.1
+    image: apache/spark:3.5.7
     depends_on:
       - spark-master
     environment:
@@ -112,6 +114,8 @@ services:
       - SPARK_WORKER_CORES=2
       - SPARK_WORKER_MEMORY=2G
       - SPARK_MASTER_URL=spark://spark-master:7077
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio-password
       - AWS_REGION=us-east-1
     command: >
       bash -c "
@@ -133,6 +137,8 @@ services:
       - PYSPARK_PYTHON=python3
       - PYSPARK_DRIVER_PYTHON=jupyter
       - PYSPARK_DRIVER_PYTHON_OPTS="notebook --no-browser --ip=0.0.0.0 --allow-root --NotebookApp.token=''"
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio-password
       - AWS_REGION=us-east-1 # Без этого не работает, не понимаю зачем прокидывать этот env в этот контейнер
     ports:
       - "8888:8888"
