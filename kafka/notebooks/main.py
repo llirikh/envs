@@ -5,9 +5,8 @@ from datetime import datetime
 import random
 import uuid
 
-# Initialize Kafka Producer
 producer = KafkaProducer(
-    bootstrap_servers=['localhost:29092'],
+    bootstrap_servers=['kafka:9092'],
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
@@ -22,6 +21,6 @@ for i in range(1, 100):
     producer.send(topic, value=message)
     
     print(f"Sent: {message}")
-    time.sleep(1.5)
+    time.sleep(2)
 
 producer.close()
